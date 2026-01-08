@@ -1,0 +1,225 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Preorder {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  status    String   @default(PENDING)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("preorders")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Profile information
+  age          Int?
+  weight       Float?   // kg
+  height       Float?   // cm
+  gender       Gender?
+  activityLevel ActivityLevel? @map("activity_level")
+
+  // Relations
+  workouts      Workout[]
+  bodyMeasurements BodyMeasurement[]
+  recoveryData  RecoveryData[]
+  userGoals     UserGoal[]
+
+  @@map("users")
+}
+
+model Workout {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  date        DateTime
+  duration    Int      // minutes
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises   WorkoutExercise[]
+
+  @@map("workouts")
+}
+
+model WorkoutExercise {
+  id          String   @id @default(cuid())
+  workoutId   String   @map("workout_id")
+  exerciseId  String   @map("exercise_id")
+  order       Int
+  notes       String?
+
+  // Relations
+  workout     Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+  sets        WorkoutSet[]
+
+  @@map("workout_exercises")
+}
+
+model WorkoutSet {
+  id                String   @id @default(cuid())
+  workoutExerciseId String   @map("workout_exercise_id")
+  setNumber         Int      @map("set_number")
+  reps              Int
+  weight            Float    // kg
+  rpe               Int?     // Rate of Perceived Exertion 1-10
+  rir               Int?     // Reps in Reserve
+  restTime          Int?     // seconds
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+
+  @@map("workout_sets")
+}
+
+model Exercise {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  category      ExerciseCategory
+  muscleGroups  MuscleGroup[] @map("muscle_groups")
+  instructions  String?
+  difficulty    ExerciseDifficulty
+  equipment     String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workouts      WorkoutExercise[]
+
+  @@map("exercises")
+}
+
+model BodyMeasurement {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  date          DateTime
+  weight        Float?   // kg
+  bodyFat       Float?   // percentage
+  chest         Float?   // cm
+  waist         Float?   // cm
+  hips          Float?   // cm
+  biceps        Float?   // cm
+  thighs        Float?   // cm
+  calves        Float?   // cm
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("body_measurements")
+}
+
+model RecoveryData {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  date          DateTime
+  sleepHours    Float?   @map("sleep_hours")
+  sleepQuality  Int?     @map("sleep_quality") // 1-5 scale
+  steps         Int?
+  heartRate     Int?     @map("heart_rate") // resting heart rate
+  fatigueScore  Float?   @map("fatigue_score") // 0-100 calculated score
+  stressLevel   Int?     @map("stress_level") // 1-10 scale
+  mood          Int?     // 1-10 scale
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("recovery_data")
+}
+
+model UserGoal {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  type          GoalType
+  targetValue   Float?   @map("target_value")
+  targetDate    DateTime? @map("target_date")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_goals")
+}
+
+// Enums
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHTLY_ACTIVE
+  MODERATELY_ACTIVE
+  VERY_ACTIVE
+  EXTREMELY_ACTIVE
+}
+
+enum ExerciseCategory {
+  STRENGTH
+  CARDIO
+  FLEXIBILITY
+  BALANCE
+  FUNCTIONAL
+  SPORTS_SPECIFIC
+}
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  LEGS
+  GLUTES
+  CORE
+  CALVES
+  FOREARMS
+  TRAPS
+  LATS
+}
+
+enum ExerciseDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum GoalType {
+  WEIGHT_LOSS
+  WEIGHT_GAIN
+  MUSCLE_GAIN
+  STRENGTH_GAIN
+  ENDURANCE
+  FLEXIBILITY
+  BODY_FAT_PERCENTAGE
+}
