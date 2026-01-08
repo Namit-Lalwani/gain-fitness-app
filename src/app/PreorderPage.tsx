@@ -33,26 +33,29 @@ export default function PreorderPage() {
     }
 
     try {
-      const response = await fetch(`${(import.meta as any).env.VITE_API_URL || 'http://localhost:3001'}/api/preorder`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
+      // Save to localStorage for GitHub Pages compatibility
+      const submissionData = {
+        ...formData,
+        timestamp: new Date().toISOString()
+      };
       
-      if (data.success) {
-        setIsSubmitted(true);
-        setTimeout(() => {
-          navigate('/preorder-success');
-        }, 2000);
-      } else {
-        setError(data.message || 'Failed to submit. Please try again.');
-      }
+      // Get existing signups or create new array
+      const existingSignups = JSON.parse(localStorage.getItem('gain_all_signups') || '[]');
+      existingSignups.push(submissionData);
+      
+      // Save all signups
+      localStorage.setItem('gain_all_signups', JSON.stringify(existingSignups));
+      
+      // Also save latest for compatibility
+      localStorage.setItem('gain_preorder', JSON.stringify(submissionData));
+      
+      setIsSubmitted(true);
+      setTimeout(() => {
+        navigate('/preorder-success');
+      }, 2000);
+      
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError('Failed to submit. Please try again.');
     } finally {
       setIsLoading(false);
     }

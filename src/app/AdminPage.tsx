@@ -32,10 +32,25 @@ export default function AdminPage() {
         if (data) {
           try {
             const parsed = JSON.parse(data);
-            allSignups.push({
-              ...parsed,
-              timestamp: new Date().toISOString() // You might want to store actual timestamp
-            });
+            if (Array.isArray(parsed)) {
+              // If it's an array of signups
+              parsed.forEach(signup => {
+                allSignups.push({
+                  name: signup.name || '',
+                  email: signup.email || '',
+                  phone: signup.phone || '',
+                  timestamp: signup.timestamp || new Date().toISOString()
+                });
+              });
+            } else {
+              // If it's a single signup
+              allSignups.push({
+                name: parsed.name || '',
+                email: parsed.email || '',
+                phone: parsed.phone || '',
+                timestamp: parsed.timestamp || new Date().toISOString()
+              });
+            }
           } catch (e) {
             console.error('Error parsing data:', e);
           }
@@ -43,7 +58,12 @@ export default function AdminPage() {
       }
     }
     
-    setSignups(allSignups);
+    // Remove duplicates based on email
+    const uniqueSignups = allSignups.filter((signup, index, self) =>
+      index === self.findIndex((s) => s.email === signup.email)
+    );
+    
+    setSignups(uniqueSignups);
   };
 
   const handleLogin = (e: React.FormEvent) => {
